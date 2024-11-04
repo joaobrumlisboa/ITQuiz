@@ -30,7 +30,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-
 import kotlinx.coroutines.withContext
 import java.io.IOException
 
@@ -44,12 +43,13 @@ fun QuizScreen(onFinish: (Int) -> Unit, username: String) {
     var showFeedback by remember { mutableStateOf(false) }
     var isCorrect by remember { mutableStateOf(false) }
     var score by remember { mutableStateOf(999) }
-    var timeTaken by remember { mutableStateOf(0L) }
+    var totalTimeTaken by remember { mutableStateOf(0L) } // Acumulador de tempo total
     var correctAnswersCount by remember { mutableStateOf(0) }
     val coroutineScope = rememberCoroutineScope()
     val db = AppDatabase.getDatabase(context)
     val scoreDao = db.scoreDao()
     var mediaPlayer: MediaPlayer? by remember { mutableStateOf(null) }
+    var timeTaken = 0L
 
     // Proteção contra acesso a perguntas quando todas já foram respondidas
     if (currentQuestionIndex >= questions.size) {
@@ -91,17 +91,6 @@ fun QuizScreen(onFinish: (Int) -> Unit, username: String) {
             Log.e("QuizScreen", "Error playing audio: ${e.message}")
         }
     }
-
-
-
-
-
-
-
-
-
-
-
 
     val randomizedIndices by remember(currentQuestionIndex) {
         mutableStateOf((0 until currentQuestion.options.size).shuffled())
@@ -149,8 +138,10 @@ fun QuizScreen(onFinish: (Int) -> Unit, username: String) {
                     selectedAnswer = randomIndex
                     showFeedback = true
                     isCorrect = randomIndex == correctAnswerIndex
-                    timeTaken = (System.currentTimeMillis() - timeTaken)
-                    score -= (timeTaken / 100).toInt()
+
+                    // Soma o tempo que o usuário levou para responder a esta pergunta
+                    totalTimeTaken += (System.currentTimeMillis() - timeTaken) // Acumula o tempo
+                    timeTaken = System.currentTimeMillis() // Reseta o tempo para a próxima pergunta
                 },
                 modifier = Modifier
                     .padding(8.dp)
@@ -176,12 +167,18 @@ fun QuizScreen(onFinish: (Int) -> Unit, username: String) {
                     correctAnswersCount++
                 }
 
-                currentQuestionIndex++
+                // Não avança a pergunta se o usuário errou
+                if (isCorrect) {
+                    currentQuestionIndex++
+                }
 
                 // Verifique se o usuário acertou e se é a última pergunta
                 if (currentQuestionIndex >= questions.size) {
                     // O quiz terminou
                     if (isCorrect) {
+                        // Calcular a pontuação final
+                        score = 999 - (totalTimeTaken / 100).toInt()
+
                         // Salva o score ao final do quiz somente se o usuário acertou
                         coroutineScope.launch {
                             withContext(Dispatchers.IO) {
@@ -195,12 +192,9 @@ fun QuizScreen(onFinish: (Int) -> Unit, username: String) {
                     }
                 } else if (!isCorrect) {
                     onFinish(-1) // Passar -1 se errou, mesmo que não seja a última pergunta
-                } else {
-                    timeTaken = System.currentTimeMillis()
                 }
             }
         }
-
 
         LaunchedEffect(currentQuestionIndex) {
             timeTaken = System.currentTimeMillis()

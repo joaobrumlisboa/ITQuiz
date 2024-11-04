@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
@@ -19,6 +20,7 @@ class MainActivity : ComponentActivity() {
     private var score by mutableStateOf(0)
     private var username by mutableStateOf("") // Variável para armazenar o nome do usuário
 
+    @OptIn(ExperimentalAnimationApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -28,26 +30,36 @@ class MainActivity : ComponentActivity() {
                 Box(modifier = Modifier.fillMaxSize()) {
                     VideoBackground()
 
-                    Box(modifier = Modifier
-                        .fillMaxSize()
-                        .padding(32.dp)) {
-                        when (currentScreen) {
-                            "main" -> MainScreen(
-                                onStartClick = { name ->
-                                    username = name // Armazena o nome do usuário
-                                    currentScreen = "quiz"
-                                },
-                                onLeaderboardClick = { currentScreen = "leaderboard" }
-                            )
-                            "leaderboard" -> LeaderboardScreen(onBackClick = { currentScreen = "main" })
-                            "quiz" -> QuizScreen(onFinish = { finalScore ->
-                                score = finalScore
-                                currentScreen = if (finalScore >= 0) {
-                                    "leaderboard" // Mostra o leaderboard se o usuário ganhar
-                                } else {
-                                    "main" // Volta para o menu principal se perder
-                                }
-                            }, username = username) // Passa o nome do usuário para a QuizScreen
+                    Box(modifier = Modifier.fillMaxSize().padding(32.dp)) {
+                        AnimatedContent(
+                            targetState = currentScreen,
+                            transitionSpec = {
+                                slideInHorizontally(initialOffsetX = { width -> width }) with
+                                        slideOutHorizontally(targetOffsetX = { width -> -width }) using
+                                        SizeTransform(clip = false)
+                            }
+                        ) { screen ->
+                            when (screen) {
+                                "main" -> MainScreen(
+                                    onStartClick = { name ->
+                                        username = name
+                                        currentScreen = "quiz"
+                                    },
+                                    onLeaderboardClick = {
+                                        currentScreen = "leaderboard"
+                                    }
+                                )
+                                "quiz" -> QuizScreen(
+                                    onFinish = { finalScore ->
+                                        score = finalScore
+                                        currentScreen = if (finalScore >= 0) "leaderboard" else "main"
+                                    },
+                                    username = username
+                                )
+                                "leaderboard" -> LeaderboardScreen(
+                                    onBackClick = { currentScreen = "main" }
+                                )
+                            }
                         }
                     }
                 }
