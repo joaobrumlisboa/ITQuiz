@@ -1,6 +1,6 @@
 package com.example.itquiz.ui
 
-import android.annotation.SuppressLint
+
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -8,16 +8,13 @@ import android.media.MediaPlayer
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,7 +23,6 @@ import com.example.itquiz.data.AppDatabase
 import com.example.itquiz.data.QuestionRepository
 import com.example.itquiz.data.Score
 import com.example.itquiz.ui.theme.buttonColors
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -43,7 +39,7 @@ fun QuizScreen(onFinish: (Int) -> Unit, username: String) {
     var showFeedback by remember { mutableStateOf(false) }
     var isCorrect by remember { mutableStateOf(false) }
     var score by remember { mutableStateOf(999) }
-    var totalTimeTaken by remember { mutableStateOf(0L) } // Acumulador de tempo total
+    var totalTimeTaken by remember { mutableStateOf(0L) }
     var correctAnswersCount by remember { mutableStateOf(0) }
     val coroutineScope = rememberCoroutineScope()
     val db = AppDatabase.getDatabase(context)
@@ -51,36 +47,29 @@ fun QuizScreen(onFinish: (Int) -> Unit, username: String) {
     var mediaPlayer: MediaPlayer? by remember { mutableStateOf(null) }
     var timeTaken = 0L
 
-    // Proteção contra acesso a perguntas quando todas já foram respondidas
     if (currentQuestionIndex >= questions.size) {
-        return // Retorna imediatamente se não houver mais perguntas
+        return
     }
 
     val currentQuestion = questions[currentQuestionIndex]
-    val imageBitmap = loadImageFromAssets(context, currentQuestion.image)?.asImageBitmap()
+    val imageBitmap = loadImage(context, currentQuestion.image)?.asImageBitmap()
 
     fun playAudio(context: Context) {
-        // Libera o MediaPlayer anterior se estiver em uso
         mediaPlayer?.apply {
-            reset()  // Redefine o MediaPlayer
-            release() // Libera recursos
+            reset()
+            release()
         }
 
         mediaPlayer = MediaPlayer()
         try {
-            // Configura o arquivo de áudio a partir dos assets
             val assetFileDescriptor = context.assets.openFd("beep.mp3")
             mediaPlayer?.apply {
                 setDataSource(assetFileDescriptor.fileDescriptor, assetFileDescriptor.startOffset, assetFileDescriptor.length)
-
-                // Usa prepareAsync para preparar o áudio de forma assíncrona
                 setOnPreparedListener {
-                    start() // Reproduz o áudio quando estiver preparado
-                    Log.d("QuizScreen", "Audio started playing successfully")
+                    start()
+                    Log.d("QuizScreen", "Audio started playing")
                 }
-                prepareAsync() // Prepara o áudio de forma assíncrona
-
-                // Libera o MediaPlayer após a reprodução
+                prepareAsync()
                 setOnCompletionListener {
                     it.release()
                     mediaPlayer = null
@@ -92,19 +81,18 @@ fun QuizScreen(onFinish: (Int) -> Unit, username: String) {
         }
     }
 
-    val randomizedIndices by remember(currentQuestionIndex) {
+    val randomizedIndex by remember(currentQuestionIndex) {
         mutableStateOf((0 until currentQuestion.options.size).shuffled())
     }
 
     val correctAnswerIndex = 1
-    val correctAnswer = currentQuestion.options[correctAnswerIndex]
 
     Column(
         modifier = Modifier.fillMaxSize().padding(2.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val correctAnswersImage = "${correctAnswersCount}acerto.png"
-        loadImageFromAssets(context, correctAnswersImage)?.asImageBitmap()?.let {
+        val correctAnswersImg = "${correctAnswersCount}acerto.png"
+        loadImage(context, correctAnswersImg)?.asImageBitmap()?.let {
             Image(
                 bitmap = it,
                 contentDescription = null,
@@ -131,17 +119,15 @@ fun QuizScreen(onFinish: (Int) -> Unit, username: String) {
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        randomizedIndices.forEachIndexed { index, randomIndex ->
+        randomizedIndex.forEachIndexed { index, randomIndex ->
             val option = currentQuestion.options[randomIndex]
             Button(
                 onClick = {
                     selectedAnswer = randomIndex
                     showFeedback = true
                     isCorrect = randomIndex == correctAnswerIndex
-
-                    // Soma o tempo que o usuário levou para responder a esta pergunta
-                    totalTimeTaken += (System.currentTimeMillis() - timeTaken) // Acumula o tempo
-                    timeTaken = System.currentTimeMillis() // Reseta o tempo para a próxima pergunta
+                    totalTimeTaken += (System.currentTimeMillis() - timeTaken)
+                    timeTaken = System.currentTimeMillis()
                 },
                 modifier = Modifier
                     .padding(8.dp)
@@ -167,42 +153,40 @@ fun QuizScreen(onFinish: (Int) -> Unit, username: String) {
                     correctAnswersCount++
                 }
 
-                // Não avança a pergunta se o usuário errou
                 if (isCorrect) {
                     currentQuestionIndex++
                 }
 
-                // Verifique se o usuário acertou e se é a última pergunta
                 if (currentQuestionIndex >= questions.size) {
-                    // O quiz terminou
                     if (isCorrect) {
-                        // Calcular a pontuação final
-                        score = 999 - (totalTimeTaken / 100).toInt()
-
-                        // Salva o score ao final do quiz somente se o usuário acertou
+                        score -= (totalTimeTaken / 250).toInt()
+                        if (score > 999){
+                            score = 999
+                        }
+                        else if (score < 1){
+                            score = 1
+                        }
                         coroutineScope.launch {
                             withContext(Dispatchers.IO) {
                                 scoreDao.insertScore(Score(username = username, points = score))
                             }
-                            onFinish(score) // Chama onFinish após a inserção
+                            onFinish(score)
                         }
                     } else {
-                        // Se o usuário errou, não deve ir para a leaderboard
-                        onFinish(-1) // Passar -1 para indicar que o quiz foi perdido
+                        onFinish(-1)
                     }
                 } else if (!isCorrect) {
-                    onFinish(-1) // Passar -1 se errou, mesmo que não seja a última pergunta
+                    onFinish(-1)
                 }
             }
         }
-
         LaunchedEffect(currentQuestionIndex) {
             timeTaken = System.currentTimeMillis()
         }
     }
 }
 
-private fun loadImageFromAssets(context: Context, fileName: String): Bitmap? {
+private fun loadImage(context: Context, fileName: String): Bitmap? {
     val assetManager = context.assets
     val inputStream = assetManager.open(fileName)
     return BitmapFactory.decodeStream(inputStream)

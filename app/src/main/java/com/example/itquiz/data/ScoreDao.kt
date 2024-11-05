@@ -9,7 +9,7 @@ interface ScoreDao {
     @Insert
     fun insertScore(score: Score)
 
-    @Query("SELECT * FROM scores ORDER BY points DESC LIMIT 10") // Limita a 10 resultados
+    @Query("SELECT * FROM scores ORDER BY points DESC LIMIT 10")
     fun getAllScores(): List<Score>
 }
 

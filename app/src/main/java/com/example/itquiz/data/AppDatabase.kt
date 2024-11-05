@@ -5,7 +5,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import android.content.Context
 
-@Database(entities = [Score::class], version = 2, exportSchema = false) // Aumente a versão para 2
+@Database(entities = [Score::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun scoreDao(): ScoreDao
 
@@ -20,7 +20,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "score_database"
                 )
-                    .fallbackToDestructiveMigration() // Adicione isso para permitir a recriação do banco
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance

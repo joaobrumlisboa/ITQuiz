@@ -32,8 +32,4 @@ class QuestionRepository(private val context: Context) {
     fun randomizeQuestions(count: Int): List<Question> {
         return questions.shuffled().take(count)
     }
-
-    fun getImageByName(name: String): String {
-        return context.assets.list("")?.find { it == name }?.let { name } ?: ""
-    }
 }

@@ -1,7 +1,5 @@
 package com.example.itquiz.ui
 
-import android.net.Uri
-import android.widget.VideoView
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
@@ -13,12 +11,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.view.WindowInsetsCompat
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalView
-import androidx.core.view.ViewCompat
 import com.example.itquiz.data.AppDatabase
 import com.example.itquiz.data.Score
 import com.example.itquiz.ui.theme.buttonColors
@@ -45,13 +37,13 @@ fun LeaderboardScreen(onBackClick: () -> Unit) {
                 .padding(start = 32.dp, end = 32.dp, top = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Leaderboard", fontSize = 32.sp, color = Color.White)
+            Text(text = "Leaderboard", fontSize = 46.sp, color = Color.White)
             Spacer(modifier = Modifier.height(8.dp))
             scores.forEach { score ->
                 Text(
-                    text = "${score.username} - ${score.points} pontos",
+                    text = "${score.username} - ${score.points}",
                     color = Color.White,
-                    fontSize = 18.sp
+                    fontSize = 22.sp
                 )
             }
         }
@@ -64,7 +56,7 @@ fun LeaderboardScreen(onBackClick: () -> Unit) {
                 .align(Alignment.BottomCenter)
                 .padding(start = 32.dp, end = 32.dp, bottom = 16.dp)
         ) {
-            Text(text = "Voltar", color = Color.Black)
+            Text(text = "Menu Principal", color = Color.Black)
         }
     }
 }

@@ -18,7 +18,7 @@ import com.example.itquiz.ui.VideoBackground
 class MainActivity : ComponentActivity() {
     private var currentScreen by mutableStateOf("main")
     private var score by mutableStateOf(0)
-    private var username by mutableStateOf("") // Variável para armazenar o nome do usuário
+    private var username by mutableStateOf("")
 
     @OptIn(ExperimentalAnimationApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
