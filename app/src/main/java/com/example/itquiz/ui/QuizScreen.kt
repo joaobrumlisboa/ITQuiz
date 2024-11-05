@@ -159,7 +159,7 @@ fun QuizScreen(onFinish: (Int) -> Unit, username: String) {
 
                 if (currentQuestionIndex >= questions.size) {
                     if (isCorrect) {
-                        score -= (totalTimeTaken / 250).toInt()
+                        score -= (totalTimeTaken / 750).toInt()
                         if (score > 999){
                             score = 999
                         }
